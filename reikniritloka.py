@@ -10,7 +10,8 @@ tier1items = [
     {"name":"faerie charm","mana-regen":25,"gold value":125,"gold cost":125},{"name":"long sword","attack damage":10,"gold value":350,"gold cost":350},
     {"name":"blasting wand","ability power":40,"gold value":870,"gold cost":850},{"name":"null-magic mantle","magic resist":25,"gold value":450,"gold cost":450},
     {"name":"pickaxe","attack damage":25,"gold value":875,"gold cost":875},{"name":"rejuvenation bead","health-regen":50,"gold value":150,"gold cost":150},
-    {"name":"sapphire crystal","mana":250,"gold value":350,"gold cost":350}
+    {"name":"sapphire crystal","mana":250,"gold value":350,"gold cost":350},{"name":"stopwatch","gold value":900,"gold cost":600},
+    {"name":"B.F. sword","attack damage":40,"gold value":1400,"gold cost":1300}
 ]
 
 tier2items = [
@@ -28,6 +29,18 @@ tier2items = [
     {"name":"seeker's armguard","recipe":["cloth armor","amplifying tome","cloth armor"],"ability power":20,"armor":30,"gold value":1661,"gold cost":1100},{"name":"serrated dirk","recipe":["long sword","long sword"],"attack damage":25,"lethality":10,"gold value":1100,"gold cost":1100},
     {"name":"spectre's cowl","recipe":["ruby crystal","null-magic mantle"],"health":250,"magic resist":25,"gold value":1567,"gold cost":1200},{"name":"tiamat","recipe":["long sword","rejuvenation bead","long sword"],"attack damage":25,"health-regen":50,"gold value":1025,"gold cost":1325},
     {"name":"warden's mail","recipe":["cloth armor","cloth armor"],"armor":40,"gold value":800,"gold cost":1000}
+]
+
+tier3items = [
+    {"name":"abyssal mask","recipe":["catalyst of aeons","negatron cloak"],"CDR":10,"health":350,"magic resist":55,"mana":300,"gold value":2610,"gold cost":3000},
+    {"name":"adaptive helm","recipe":["null-magic mantle","spectre's cowl","rejuvenation bead"],"CDR":10,"health":350,"health-regen":100,"magic resist":55,"gold value":2490,"gold cost":2800},
+    {"name":"dead man's plate","recipe":["chain vest","giant's belt"],"armor":60,"health":425,"gold value":3053,"gold cost":2900},
+    {"name":"edge of night","recipe":["pickaxe","serrated dirk","ruby crystal"],"attack damage":55,"health":250,"gold value":2997,"gold cost":3000},
+    {"name":"frozen heart","recipe":["warden's mail","glacial shroud"],"armor":100,"CDR":20,"mana":400,"gold value":3093,"gold cost":2700},
+    {"name":"frozen mallet","recipe":["jaurim's fist","giant's belt"],"attack damage":30,"health":700,"gold value":2917,"gold cost":3100},
+    {"name":"gargoyle stoneplate","recipe":["chain vest","stopwatch","negatron cloak"],"armor":40,"magic resist":40,"gold value":3040,"gold cost":2500},
+    {"name":"guardian angel","recipe":["B.F. sword","chain vest","stopwatch"],"armor":40,"attack damage":45,"gold value":2375,"gold cost":2800},
+
 ]
 itemsInShop = []
 
