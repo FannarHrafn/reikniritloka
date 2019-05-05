@@ -98,16 +98,69 @@ def itemShop(gold,baseHealth,baseArmor,inventory):
         self.baseEffHP = float((1 + self.baseArmor/100) * self.baseHealth)
         self.currEffHP = float((1 + self.baseArmor/100) * self.baseHealth)
 
-    def calcEffHP(self,extraHealth,extraArmor):
+    def calcEffHP(self,extraHealth = 0,extraArmor = 0):
         return float((1 + (self.currArmor + extraArmor)/100) * (self.currHealth + extraHealth))
 
-    #min money to buy anything assuming already owning atleast one ruby crystal is buying a crystalline bracer for 100 + 150 for buying rejuvination bead
-    def smartShopper(self):
-        if len(self.inventory) == 0:
-            if calcEffHP(self,150,0) > calcEffHP(self,0,15):
-                self.gold -= 400
-                #self.inventory.append(ruby crystal)
+    def findPursuit(self,items):
+        currentPursuit = items[0]
+        for x in items:
+            if currentPursuit.calcEffHP(self,currentPursuit["health"],currentPursuit["armor"]) < x.calcEffHP(self,x["health"],x["armor"]) and x not in self.inventory:
+                currentPursuit = x
+        return currentPursuit
+
+    def findItems(self,list):
+        shoppingList = []
+        for x in list:
+            if x in tier2items:
+                for z in tier2items:
+                    if z["name"] == x:
+                        shoppingList.append(z)
             else:
-                self.gold -= 300
-                #self.inventory.append(cloth armor)
-        elif
+                for z in tier1items:
+                    if z["name"] == x:
+                        shoppingList.append(z)
+        return shoppingList
+
+    def tier3Shopper(self):
+        if len(self.inventory) != 6 and self.gold > 150:
+            #find item to pursue
+            self.pursuit = findPursuit(self,tier3items)
+            #buy pursuit item if possible
+            if self.gold >= self.pursuit["gold cost"]:
+                self.gold -= self.pursuit["gold cost"]
+                self.inventory.append(self.pursuit)
+                return tier3Shopper(self)
+            else:
+                findingList = self.pursuit["recipe"]
+                shoppingList = findItems(self,findingList)
+                return tier2Shopper(self,shoppingList)
+
+    def tier2Shopper(self,shoppingList):
+        if len(self.inventory) !=6 and self.gold > 150:
+            #find item to pursue
+            self.pursuit = findPursuit(self,shoppingList)
+            #buy pursuit if possible
+            if self.gold >= self.pursuit["gold cost"]:
+                self.gold -= self.pursuit["gold cost"]
+                self.inventory.append(self.pursuit)
+                shoppingList.remove(self.pursuit)
+                return tier2Shopper(self,shoppingList)
+            else:
+                shoppingList.remove(self.pursuit)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
