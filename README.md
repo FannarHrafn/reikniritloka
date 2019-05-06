@@ -1,3 +1,3 @@
 # reikniritloka
 
-# check wiki
+# check wiki for all your information
