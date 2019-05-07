@@ -1,6 +1,6 @@
 #Fannar Hrafn Haraldsson
 #3.5.19
-#lokaverkefni tengt tölvuleiknum League of Legends og að kaupa items inn í leiknum
+#lokaverkefni tengt tolvuleiknum League of Legends og ad kaupa items inn i leiknum
 
 #stats on items in order: Name, Health, Armor, magic Resistance, Health Regen, Mana Regen, Attack Damage, Attack Speed, Ability power, Mana,
 #  Cooldown Reduction, Movement Speed, Passive, Gold Value without Passive, Gold Value with Passive
@@ -85,30 +85,40 @@ tier3items = [
     {"name":"zz'rot portal","recipe":["raptor cloak","negatron cloak"],"armor":55,"health-regen":125,"magic resist":55,"gold value":3255,"gold cost":2700}
 ]
 itemsInShop = []
+class itemShop:
 
-def itemShop(gold,baseHealth,baseArmor,inventory):
-
-    def __init__(self):
+    def __init__(self,gold,baseHealth,baseArmor,inventory):
         self.inventory = inventory
+        self.basegold = gold
         self.gold = gold
-        self.baseHealth = float(baseHealth)
-        self.currHealth = float(baseHealth)
-        self.baseArmor = float(baseArmor)
-        self.currArmor = float(baseArmor)
+        self.pursuit = {"name":"default pursuit","recipe":tier3items,"health":0,"armor":0,"gold cost":1000,"gold value":1000}
+        self.recipe = []
+        self.baseHealth = baseHealth
+        self.currHealth = baseHealth
+        self.baseArmor = baseArmor
+        self.currArmor = baseArmor
+        self.goldValue = 0
         self.baseEffHP = float((1 + self.baseArmor/100) * self.baseHealth)
         self.currEffHP = float((1 + self.baseArmor/100) * self.baseHealth)
 
     def calcEffHP(self,extraHealth = 0,extraArmor = 0):
         return float((1 + (self.currArmor + extraArmor)/100) * (self.currHealth + extraHealth))
 
+    def compareItems(self,currentItem,xItem):
+            if self.calcEffHP(currentItem.get("health",0),currentItem.get("armor",0)) < self.calcEffHP(xItem.get("health",0),xItem.get("armor",0)):
+                currentItem = xItem
+            return currentItem
+
     def findPursuit(self,items):
-        currentPursuit = items[0]
+        currentPursuit = tier1items[0]
         for x in items:
-            if currentPursuit.calcEffHP(self,currentPursuit["health"],currentPursuit["armor"]) < x.calcEffHP(self,x["health"],x["armor"]) and x not in self.inventory:
-                currentPursuit = x
+            if x in tier3items and x not in self.inventory:
+                currentPursuit = self.compareItems(currentPursuit,x)
+            elif x["name"] in self.recipe:
+                currentPursuit = self.compareItems(currentPursuit,x)
         return currentPursuit
 
-    def findItems(self,list):
+    def findRecipeItems(self,list):
         shoppingList = []
         for x in list:
             if x in tier2items:
@@ -121,43 +131,50 @@ def itemShop(gold,baseHealth,baseArmor,inventory):
                         shoppingList.append(z)
         return shoppingList
 
-    def tier3Shopper(self):
-        if len(self.inventory) != 6 and self.gold > 150:
+    def minGoldForRecipe(self):
+        minGold = 0
+        if len(self.recipe) != 0:
+            recipe = self.findRecipeItems(self.recipe)
+            minGold = 10000
+            for x in recipe:
+                minGold = min(x["gold cost"],minGold)
+        return minGold
+
+    def smartShopper(self,shoppingList):
+        if len(self.inventory) != 6 and self.gold > self.minGoldForRecipe() or len(self.inventory) == 0:
             #find item to pursue
-            self.pursuit = findPursuit(self,tier3items)
+            self.pursuit = self.findPursuit(shoppingList)
             #buy pursuit item if possible
             if self.gold >= self.pursuit["gold cost"]:
+                if self.pursuit["name"] in self.recipe:
+                    self.recipe.remove(self.pursuit["name"])
                 self.gold -= self.pursuit["gold cost"]
+                self.currHealth += self.pursuit.get("health",0)
+                self.currArmor += self.pursuit.get("armor",0)
+                self.goldValue += self.pursuit.get("gold value",0)
                 self.inventory.append(self.pursuit)
-                return tier3Shopper(self)
+                return self.smartShopper(shoppingList)
             else:
-                findingList = self.pursuit["recipe"]
-                shoppingList = findItems(self,findingList)
-                return tier2Shopper(self,shoppingList)
+                self.recipe = self.pursuit.get("recipe",[])
+                findingList = self.pursuit.get("recipe",[])
+                shoppingList = self.findRecipeItems(findingList)
+                return self.smartShopper(shoppingList)
+        else:
+            return "good shopping"
 
-    def tier2Shopper(self,shoppingList):
-        if len(self.inventory) !=6 and self.gold > 150:
-            #find item to pursue
-            self.pursuit = findPursuit(self,shoppingList)
-            #buy pursuit if possible
-            if self.gold >= self.pursuit["gold cost"]:
-                self.gold -= self.pursuit["gold cost"]
-                self.inventory.append(self.pursuit)
-                shoppingList.remove(self.pursuit)
-                return tier2Shopper(self,shoppingList)
-            else:
-                shoppingList.remove(self.pursuit)
-
-
-
-
-
-
-
-
-
-
-
+champion = itemShop(20000,2100,66,[])
+print (champion.currHealth)
+champion.smartShopper(tier3items)
+print("base Health:",champion.baseHealth)
+print("base armor:",champion.baseArmor)
+print ("Effective Health:",champion.calcEffHP())
+print("curr Health:",champion.currHealth)
+print("curr armor:",champion.currArmor)
+print("gold value - gold gone to shop with:",champion.goldValue, champion.basegold)
+for x in champion.inventory:
+    print (x["name"])
+print len(champion.inventory)
+print (champion.pursuit["name"])
 
 
 
