@@ -84,11 +84,11 @@ tier3items = [
     {"name":"zhonya's hourglass","recipe":["seeker's armguard","stopwatch","fiendish codex"],"ability power":75,"armor":45,"CDR":10,"gold value":3098,"gold cost":2900},
     {"name":"zz'rot portal","recipe":["raptor cloak","negatron cloak"],"armor":55,"health-regen":125,"magic resist":55,"gold value":3255,"gold cost":2700}
 ]
-itemsInShop = []
+
 class itemShop:
 
-    def __init__(self,gold,baseHealth,baseArmor,inventory):
-        self.inventory = inventory
+    def __init__(self,baseHealth,baseArmor,gold):
+        self.inventory = []
         self.basegold = gold
         self.gold = gold
         self.pursuit = {"name":"default pursuit","recipe":tier3items,"health":0,"armor":0,"gold cost":1000,"gold value":1000}
@@ -102,7 +102,7 @@ class itemShop:
         self.currEffHP = float((1 + self.baseArmor/100) * self.baseHealth)
 
     def calcEffHP(self,extraHealth = 0,extraArmor = 0):
-        return float((1 + (self.currArmor + extraArmor)/100) * (self.currHealth + extraHealth))
+        return (1 + (self.currArmor + extraArmor)/100) * (self.currHealth + extraHealth)
 
     def compareItems(self,currentItem,xItem):
             if self.calcEffHP(currentItem.get("health",0),currentItem.get("armor",0)) < self.calcEffHP(xItem.get("health",0),xItem.get("armor",0)):
@@ -121,14 +121,12 @@ class itemShop:
     def findRecipeItems(self,list):
         shoppingList = []
         for x in list:
-            if x in tier2items:
-                for z in tier2items:
-                    if z["name"] == x:
-                        shoppingList.append(z)
-            else:
-                for z in tier1items:
-                    if z["name"] == x:
-                        shoppingList.append(z)
+            for y in tier2items:
+                if y["name"] == x:
+                    shoppingList.append(y)
+            for z in tier1items:
+                if z["name"] == x:
+                    shoppingList.append(z)
         return shoppingList
 
     def minGoldForRecipe(self):
@@ -138,46 +136,101 @@ class itemShop:
             minGold = 10000
             for x in recipe:
                 minGold = min(x["gold cost"],minGold)
+                if "recipe" in x.keys():
+                    minirecipe = self.findRecipeItems(x["recipe"])
+                    for x in minirecipe:
+                        minGold = min(x["gold cost"],minGold)
         return minGold
 
     def smartShopper(self,shoppingList):
-        if len(self.inventory) != 6 and self.gold > self.minGoldForRecipe() or len(self.inventory) == 0:
+        print("smartshopper entry gold:",self.gold)
+        print("gold needed to entry smartshopper:",self.minGoldForRecipe())
+        if len(self.inventory) != 6 and self.gold >= self.minGoldForRecipe() and self.gold > 125 or len(self.inventory) == 0:
             #find item to pursue
             self.pursuit = self.findPursuit(shoppingList)
+            print("smart shopper pursuit:",self.pursuit)
             #buy pursuit item if possible
             if self.gold >= self.pursuit["gold cost"]:
-                if self.pursuit["name"] in self.recipe:
-                    self.recipe.remove(self.pursuit["name"])
+                print("bought item:",self.pursuit)
                 self.gold -= self.pursuit["gold cost"]
                 self.currHealth += self.pursuit.get("health",0)
                 self.currArmor += self.pursuit.get("armor",0)
                 self.goldValue += self.pursuit.get("gold value",0)
+                self.currEffHP = self.calcEffHP(self.pursuit.get("health",0),self.pursuit.get("armor",0))
                 self.inventory.append(self.pursuit)
+                print("bought item recipe:",self.recipe)
+                if self.pursuit["name"] in self.recipe:
+                    self.recipe.remove(self.pursuit["name"])
+                    if len(self.recipe) == 0:
+                        return "good shopping"
                 return self.smartShopper(shoppingList)
             else:
+                print("cant buy item")
                 self.recipe = self.pursuit.get("recipe",[])
                 findingList = self.pursuit.get("recipe",[])
-                shoppingList = self.findRecipeItems(findingList)
-                return self.smartShopper(shoppingList)
+                newShoppingList = self.findRecipeItems(findingList)
+                return self.smartShopper(newShoppingList)
         else:
             return "good shopping"
 
-champion = itemShop(20000,2100,66,[])
-print (champion.currHealth)
-champion.smartShopper(tier3items)
-print("base Health:",champion.baseHealth)
-print("base armor:",champion.baseArmor)
-print ("Effective Health:",champion.calcEffHP())
-print("curr Health:",champion.currHealth)
-print("curr armor:",champion.currArmor)
-print("gold value - gold gone to shop with:",champion.goldValue, champion.basegold)
-for x in champion.inventory:
-    print (x["name"])
-print len(champion.inventory)
-print (champion.pursuit["name"])
-
-
-
-
-
-
+while True:
+    try:
+        champion
+    except NameError:
+        numberInput = 1
+        print("Start by making a champion:")
+    else:
+        print("------------------------------------")
+        print("1: Make a champion object")
+        print("2: Print champion statistics")
+        print("3: Print inventory")
+        print("4: Print items in shop")
+        print("5: quit")
+        numberInput = int(input("Pick a numer: "))
+    if  numberInput == 1:
+        print("------------------------------------")
+        print("to make a champion pick its starting health, armor and gold to spend in the shop")
+        startingHealth = int(input("Starting Health: "))
+        startingArmor = int(input("Starting Armor: "))
+        startingGold = int(input("Starting Gold: "))
+        champion = itemShop(startingHealth,startingArmor,startingGold)
+        champion.smartShopper(tier3items)
+    elif numberInput == 2:
+        print("------------------------------------")
+        print("Champion statistics:")
+        print("Current Health:",champion.currHealth)
+        print("Current Armor:",champion.currArmor)
+        print("Current Effective Health:",round(champion.currEffHP,2))
+        print("Health gained:",champion.currHealth - champion.baseHealth)
+        print("Armor gained:",champion.currArmor - champion.baseArmor)
+        print("Effective Health gained:",round(champion.currEffHP - champion.baseEffHP,2))
+        print("Gold value gained:",champion.goldValue,"from spending:",champion.basegold - champion.gold,"gold in the shop")
+        print("Leftover gold:",champion.gold)
+    elif numberInput == 3:
+        print("------------------------------------")
+        print("Champion inventory:")
+        for x in champion.inventory:
+            print(x["name"])
+            print(x)
+    elif numberInput == 4:
+        print("------------------------------------")
+        print("All items in shop:")
+        print("Tier 1 items:")
+        for x in tier1items:
+            print(x["name"])
+            print(x)
+        print("Tier 2 items")
+        for x in tier2items:
+            print(x["name"])
+            print(x)
+        print("Tier 3 items")
+        for x in tier3items:
+            print(x["name"])
+            print(x)
+    elif numberInput == 5:
+        print("------------------------------------")
+        print("Program will now end")
+        break
+    else:
+        print("------------------------------------")
+        print("Bad input, only one number in input please")
