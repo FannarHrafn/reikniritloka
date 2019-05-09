@@ -2,8 +2,7 @@
 #3.5.19
 #lokaverkefni tengt tolvuleiknum League of Legends og ad kaupa items inn i leiknum
 
-#stats on items in order: Name, Health, Armor, magic Resistance, Health Regen, Mana Regen, Attack Damage, Attack Speed, Ability power, Mana,
-#  Cooldown Reduction, Movement Speed, Passive, Gold Value without Passive, Gold Value with Passive
+#All items that build into items relevent to the program I.E. items that build into tier 3 items that have either health, armor or both
 tier1items = [
     {"name":"ruby crystal","health":150,"gold value":400,"gold cost":400},
     {"name":"Amplifying Tome","ability power":20,"gold value":435,"gold cost":435},
@@ -84,101 +83,141 @@ tier3items = [
     {"name":"zhonya's hourglass","recipe":["seeker's armguard","stopwatch","fiendish codex"],"ability power":75,"armor":45,"CDR":10,"gold value":3098,"gold cost":2900},
     {"name":"zz'rot portal","recipe":["raptor cloak","negatron cloak"],"armor":55,"health-regen":125,"magic resist":55,"gold value":3255,"gold cost":2700}
 ]
-
+#where the magic happens
 class itemShop:
-
+    #construct a class object with everything needed to calculate what to buy and gold to spend
+    #everything with base is later used to compare before and after shopping
+    #everything with curr is actually worked with
     def __init__(self,baseHealth,baseArmor,gold):
+        #starts with nothing in inventory
         self.inventory = []
+        #gold to spend in shop
         self.basegold = gold
         self.gold = gold
+        #starts with dummy pursuit
         self.pursuit = {"name":"default pursuit","recipe":tier3items,"health":0,"armor":0,"gold cost":1000,"gold value":1000}
+        #used for when it cant buy more tier 3 items and must resort to buying as much of the recipe for a tier 3 as it can
         self.recipe = []
+        #health and armor used to find most effectice health on purchase
         self.baseHealth = baseHealth
         self.currHealth = baseHealth
         self.baseArmor = baseArmor
         self.currArmor = baseArmor
+        #gold value to starts at 0,  later used to see how much gold was effectively lost/gained
         self.goldValue = 0
+        #effective health, the main purpose of the program is to increase this number as much as it can
         self.baseEffHP = float((1 + self.baseArmor/100) * self.baseHealth)
         self.currEffHP = float((1 + self.baseArmor/100) * self.baseHealth)
-
+    #simple effective health calculator, used to compare items to each other based on which would give more effective health
+    #returns the effective health if the item were to be bought
     def calcEffHP(self,extraHealth = 0,extraArmor = 0):
         return (1 + (self.currArmor + extraArmor)/100) * (self.currHealth + extraHealth)
-
+    #used by findPursuit to help it calculate which of two items gives better effective health and returns the better item
     def compareItems(self,currentItem,xItem):
             if self.calcEffHP(currentItem.get("health",0),currentItem.get("armor",0)) < self.calcEffHP(xItem.get("health",0),xItem.get("armor",0)):
                 currentItem = xItem
             return currentItem
-
+    #finds the best item to try to buy based on what item would give most effective health and returns it
     def findPursuit(self,items):
         currentPursuit = tier1items[0]
         for x in items:
+            #it will keep trying to buy finished tier 3 items as long as it can with the small rule that it cant buy multiple
+            #of the same tier 3 item because that would  be very inefficient
             if x in tier3items and x not in self.inventory:
                 currentPursuit = self.compareItems(currentPursuit,x)
+            #when it runs out of money to buy finished items it will feed findPursuit the recipe of the item
+            #it wants to buy but can't so findPursuit finds which of the items in the recipe it should buy first
             elif x["name"] in self.recipe:
                 currentPursuit = self.compareItems(currentPursuit,x)
         return currentPursuit
-
+    #recipes for items are kept as a list in the items dictionary that contains the names of the items in its recipe
+    #findRecipeItems makes a list of the actual items in the recipe by finding them by their names
     def findRecipeItems(self,list):
         shoppingList = []
         for x in list:
-            for y in tier2items:
+            #Logic dictates that if its using findRecipeItems its doing so because it cant buy more tier3items
+            #thus there is no reason to look for the name in tier3items and just check tier1 and tier2
+            for y in tier2items+tier1items:
                 if y["name"] == x:
                     shoppingList.append(y)
-            for z in tier1items:
-                if z["name"] == x:
-                    shoppingList.append(z)
         return shoppingList
-
+    #used to make sure that the program knows when to give up because it cant even buy the lowest cost item in
+    #the recipe of whatever tier3 item its currently buying the recipe for
+    #returns the gold needed to buy the cheapest  item in the recipe
     def minGoldForRecipe(self):
         minGold = 0
+        #if there is nothing in the recipe then it hasn't run out of money for tier3items yet so it sets the bar as 0
         if len(self.recipe) != 0:
+            #if it is following a recipe it first finds the actual items  in the recipe
             recipe = self.findRecipeItems(self.recipe)
+            #dummy number
             minGold = 10000
+            #goes through items in the  recipe
             for x in recipe:
+                #compares gold costs of items in recipe
                 minGold = min(x["gold cost"],minGold)
+                #also checks if the current item has its own recipe because its a tier2 and compares gold there
                 if "recipe" in x.keys():
                     minirecipe = self.findRecipeItems(x["recipe"])
                     for x in minirecipe:
                         minGold = min(x["gold cost"],minGold)
         return minGold
-
+    #the magnum opus of the program, smartShopper actual does all of the smart shopping
+    #it buys the best items based on effective health, balancing buying more health or buying more armor
+    #it also knows when to stop and save its money
+    #simply returns  "good shopping" when its done
     def smartShopper(self,shoppingList):
-        print("smartshopper entry gold:",self.gold)
-        print("gold needed to entry smartshopper:",self.minGoldForRecipe())
+        #first it must gain access to the shop
+        #when it first goes  to the shop it will have nothing in its inventory so it gets in automaticly because of the or statement
+        #after that it it will only gain access if it doesn't have a full inventory, has atleast enough gold for the cheapest item in the recipe
+        #and for some  added safety it will also be blocked if its doesn't have enough gold for the cheapest item available: faerie charm
         if len(self.inventory) != 6 and self.gold >= self.minGoldForRecipe() and self.gold > 125 or len(self.inventory) == 0:
             #find item to pursue
             self.pursuit = self.findPursuit(shoppingList)
-            print("smart shopper pursuit:",self.pursuit)
             #buy pursuit item if possible
             if self.gold >= self.pursuit["gold cost"]:
-                print("bought item:",self.pursuit)
+                #if it can buy the pursuit item it subtracs the gold for it and adds the relevant stats to the champion
                 self.gold -= self.pursuit["gold cost"]
                 self.currHealth += self.pursuit.get("health",0)
                 self.currArmor += self.pursuit.get("armor",0)
                 self.goldValue += self.pursuit.get("gold value",0)
                 self.currEffHP = self.calcEffHP(self.pursuit.get("health",0),self.pursuit.get("armor",0))
+                #adds the  item to inventory
                 self.inventory.append(self.pursuit)
-                print("bought item recipe:",self.recipe)
+                #for when its buying from a recipe so that it doesn't buy more than it should
+                #it keeps track of what it needs from the recipe
                 if self.pursuit["name"] in self.recipe:
                     self.recipe.remove(self.pursuit["name"])
+                    #if it finished buying everything it can from the recipe it means it should stop
+                    #so that it can eventually in the context of the game save enough gold to finish the item
                     if len(self.recipe) == 0:
                         return "good shopping"
+                #calls on itself again to keep buying more items
                 return self.smartShopper(shoppingList)
             else:
-                print("cant buy item")
+                #if it can't buy more tier 3 items it falls down here for the first time
+                #and makes a new shopping list out of the recipe for  the tier3 item it wanted to buy but couldn't
+                #keeps basic recipe here to keep track of what it already has and whats missing
                 self.recipe = self.pursuit.get("recipe",[])
+                #makes new list of recipe
                 findingList = self.pursuit.get("recipe",[])
+                #finds the actualy items of the recipe
                 newShoppingList = self.findRecipeItems(findingList)
+                #starts shopping from only items in the recipe
                 return self.smartShopper(newShoppingList)
         else:
             return "good shopping"
 
+#user interface loop
 while True:
+    #starts by checking if a champion exists or not
     try:
         champion
+    #if not it forces user to make one
     except NameError:
         numberInput = 1
         print("Start by making a champion:")
+    #else it gives player control over what to do
     else:
         print("------------------------------------")
         print("1: Make a champion object")
@@ -187,14 +226,18 @@ while True:
         print("4: Print items in shop")
         print("5: quit")
         numberInput = int(input("Pick a numer: "))
+    #makes a champion by asking user for all the starting stats
     if  numberInput == 1:
         print("------------------------------------")
         print("to make a champion pick its starting health, armor and gold to spend in the shop")
         startingHealth = int(input("Starting Health: "))
         startingArmor = int(input("Starting Armor: "))
         startingGold = int(input("Starting Gold: "))
+        #makes champion
         champion = itemShop(startingHealth,startingArmor,startingGold)
+        #buys what it can with gold given
         champion.smartShopper(tier3items)
+    #prints out all relevant stats of the champion
     elif numberInput == 2:
         print("------------------------------------")
         print("Champion statistics:")
@@ -206,12 +249,14 @@ while True:
         print("Effective Health gained:",round(champion.currEffHP - champion.baseEffHP,2))
         print("Gold value gained:",champion.goldValue,"from spending:",champion.basegold - champion.gold,"gold in the shop")
         print("Leftover gold:",champion.gold)
+    #prints all items in inventory
     elif numberInput == 3:
         print("------------------------------------")
         print("Champion inventory:")
         for x in champion.inventory:
             print(x["name"])
             print(x)
+    #prints all available items in tier order
     elif numberInput == 4:
         print("------------------------------------")
         print("All items in shop:")
@@ -219,18 +264,22 @@ while True:
         for x in tier1items:
             print(x["name"])
             print(x)
+        print("------------------------------------")
         print("Tier 2 items")
         for x in tier2items:
             print(x["name"])
             print(x)
+        print("------------------------------------")
         print("Tier 3 items")
         for x in tier3items:
             print(x["name"])
             print(x)
+    #ends the program
     elif numberInput == 5:
         print("------------------------------------")
         print("Program will now end")
         break
+    #in case the user submitted something else than 1,2,3,4 or 5
     else:
         print("------------------------------------")
         print("Bad input, only one number in input please")
